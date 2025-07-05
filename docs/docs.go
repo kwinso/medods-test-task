@@ -17,7 +17,6 @@ const docTemplate = `{
     "paths": {
         "/login": {
             "post": {
-                "description": "do ping",
                 "consumes": [
                     "application/json"
                 ],
@@ -42,12 +41,106 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/api.TokenPair"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes the auth for the authenticated user",
+                "summary": "Logout the authenticated user",
+                "responses": {
+                    "204": {
+                        "description": "Successfully logged out"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the GUID for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get the GUID for the authenticated user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetMeResposne"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             }
         }
     },
     "definitions": {
+        "api.ErrorResponse": {
+            "description": "Generic error response",
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "Contains the error message",
+                    "type": "string"
+                }
+            }
+        },
+        "api.GetMeResposne": {
+            "description": "Contains the GUID for the authenticated user",
+            "type": "object",
+            "properties": {
+                "guid": {
+                    "type": "string",
+                    "example": "12345678-1234-1234-1234-123456789012"
+                }
+            }
+        },
         "api.LoginRequest": {
             "type": "object",
             "required": [
@@ -55,6 +148,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "guid": {
+                    "description": "GUID for the user that is logging in",
                     "type": "string",
                     "example": "12345678-1234-1234-1234-123456789012"
                 }
@@ -72,6 +166,14 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Authorization header using the Bearer scheme",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

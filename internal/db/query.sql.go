@@ -47,3 +47,31 @@ func (q *Queries) CreateAuth(ctx context.Context, arg CreateAuthParams) (Auth, e
 	)
 	return i, err
 }
+
+const deleteAuthById = `-- name: DeleteAuthById :exec
+DELETE FROM auths WHERE id = $1
+`
+
+func (q *Queries) DeleteAuthById(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteAuthById, id)
+	return err
+}
+
+const getAuthById = `-- name: GetAuthById :one
+SELECT id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at, created_at FROM auths WHERE id = $1
+`
+
+func (q *Queries) GetAuthById(ctx context.Context, id int32) (Auth, error) {
+	row := q.db.QueryRow(ctx, getAuthById, id)
+	var i Auth
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.RefreshTokenHash,
+		&i.IpAddress,
+		&i.UserAgent,
+		&i.RefreshedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}

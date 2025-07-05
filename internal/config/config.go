@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -14,6 +15,8 @@ type Config struct {
 	WebhookURL  url.URL
 	DatabaseURL string
 	JwtKey      string
+	TokenTTL    time.Duration
+	AuthTTL     time.Duration
 }
 
 var (
@@ -53,10 +56,32 @@ func Load() (*Config, error) {
 		return nil, ErrJWTKeyRequiredError
 	}
 
+	tokenTTL := os.Getenv("TOKEN_TTL")
+	if tokenTTL == "" {
+		tokenTTL = "1m"
+	}
+
+	tokenTTLDuration, err := time.ParseDuration(tokenTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	authTTL := os.Getenv("AUTH_TTL")
+	if authTTL == "" {
+		authTTL = "1h"
+	}
+
+	authTTLDuration, err := time.ParseDuration(authTTL)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
 		Port:        port,
 		WebhookURL:  *webhookURL,
 		DatabaseURL: dbConnStr,
 		JwtKey:      key,
+		TokenTTL:    tokenTTLDuration,
+		AuthTTL:     authTTLDuration,
 	}, nil
 }

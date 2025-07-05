@@ -27,7 +27,7 @@ func newRouter(cfg config.Config, db db.DBTX, logger *log.Logger) *gin.Engine {
 	}
 
 	authRepo := repositories.NewPgxAuthRepository(db)
-	authService := services.NewAuthService(authRepo, cfg.JwtKey)
+	authService := services.NewAuthService(authRepo, cfg.JwtKey, cfg.TokenTTL, cfg.AuthTTL)
 	authHandler := handlers.NewAuthHandler(cfg, authService, logger)
 
 	authHandler.SetupRoutes(router)
@@ -38,6 +38,10 @@ func newRouter(cfg config.Config, db db.DBTX, logger *log.Logger) *gin.Engine {
 	return router
 }
 
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Authorization header using the Bearer scheme
 func ServeWithConfig(cfg config.Config, db db.DBTX, logger *log.Logger) error {
 	return http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), newRouter(cfg, db, logger))
 }

@@ -1,7 +1,22 @@
 definitions:
+  api.ErrorResponse:
+    description: Generic error response
+    properties:
+      error:
+        description: Contains the error message
+        type: string
+    type: object
+  api.GetMeResposne:
+    description: Contains the GUID for the authenticated user
+    properties:
+      guid:
+        example: 12345678-1234-1234-1234-123456789012
+        type: string
+    type: object
   api.LoginRequest:
     properties:
       guid:
+        description: GUID for the user that is logging in
         example: 12345678-1234-1234-1234-123456789012
         type: string
     required:
@@ -27,7 +42,6 @@ paths:
     post:
       consumes:
       - application/json
-      description: do ping
       parameters:
       - description: login request
         in: body
@@ -42,5 +56,57 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/api.TokenPair'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Generate a token pair from guid
+  /logout:
+    delete:
+      description: Deletes the auth for the authenticated user
+      responses:
+        "204":
+          description: Successfully logged out
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout the authenticated user
+  /me:
+    get:
+      description: Returns the GUID for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetMeResposne'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get the GUID for the authenticated user
+securityDefinitions:
+  BearerAuth:
+    description: Authorization header using the Bearer scheme
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

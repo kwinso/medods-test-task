@@ -1,6 +1,7 @@
 package api
 
 type LoginRequest struct {
+	// GUID for the user that is logging in
 	GUID string `form:"guid" binding:"required" validate:"guid" example:"12345678-1234-1234-1234-123456789012"`
 }
 
@@ -12,4 +13,9 @@ type TokenPair struct {
 	// Refresh token can only be used to refresh a single access token it was issued with.
 	// After refreshing, the refresh token is no longer valid and cannot be used again.
 	RefreshToken string `json:"refresh_token"`
+}
+
+// @Description	Contains the GUID for the authenticated user
+type GetMeResposne struct {
+	Guid string `json:"guid" example:"12345678-1234-1234-1234-123456789012"`
 }
