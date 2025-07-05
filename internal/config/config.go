@@ -13,11 +13,13 @@ type Config struct {
 	Port        int
 	WebhookURL  url.URL
 	DatabaseURL string
+	JwtKey      string
 }
 
 var (
 	ErrWebhookURLRequiredError       = errors.New("WEBHOOK_URL env var is required")
 	ErrConnectionStringRequiredError = errors.New("DB_URL env var is required")
+	ErrJWTKeyRequiredError           = errors.New("JWT_KEY env var is required")
 )
 
 func Load() (*Config, error) {
@@ -46,9 +48,15 @@ func Load() (*Config, error) {
 		return nil, ErrConnectionStringRequiredError
 	}
 
+	key := os.Getenv("JWT_KEY")
+	if key == "" {
+		return nil, ErrJWTKeyRequiredError
+	}
+
 	return &Config{
 		Port:        port,
 		WebhookURL:  *webhookURL,
 		DatabaseURL: dbConnStr,
+		JwtKey:      key,
 	}, nil
 }

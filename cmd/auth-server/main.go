@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kwinso/medods-test-task/internal"
@@ -11,28 +12,30 @@ import (
 )
 
 func main() {
+	logger := log.New(os.Stdout, "[medods-auth] ", log.LstdFlags)
+
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	defer conn.Close(ctx)
 
 	run, err := db.ApplyMigrations(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal("Failed to apply migrations: ", err)
+		logger.Fatal("Failed to apply migrations: ", err)
 	}
 	if run {
-		log.Println("Applied migrations")
+		logger.Println("Applied migrations")
 	}
 
-	log.Printf("Starting server on port %d\n", cfg.Port)
-	if err := internal.ServeWithConfig(*cfg, conn); err != nil {
+	logger.Printf("Starting server on port %d\n", cfg.Port)
+	if err := internal.ServeWithConfig(*cfg, conn, logger); err != nil {
 		log.Fatal(err)
 	}
 }

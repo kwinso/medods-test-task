@@ -6,16 +6,15 @@ package db
 
 import (
 	"net/netip"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 type Auth struct {
-	ID           int32            `json:"id"`
-	Guid         pgtype.UUID      `json:"guid"`
-	RefreshToken string           `json:"refresh_token"`
-	IpAddress    netip.Addr       `json:"ip_address"`
-	UserAgent    string           `json:"user_agent"`
-	RefreshedAt  pgtype.Timestamp `json:"refreshed_at"`
-	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	ID               int32      `json:"id"`
+	Guid             string     `json:"guid"`
+	RefreshTokenHash string     `json:"refresh_token_hash"`
+	IpAddress        netip.Addr `json:"ip_address"`
+	UserAgent        string     `json:"user_agent"`
+	RefreshedAt      time.Time  `json:"refreshed_at"`
+	CreatedAt        time.Time  `json:"created_at"`
 }

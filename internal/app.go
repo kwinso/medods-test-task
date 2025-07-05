@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func newRouter(cfg config.Config, db db.DBTX) *gin.Engine {
+func newRouter(cfg config.Config, db db.DBTX, logger *log.Logger) *gin.Engine {
 	router := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -26,8 +27,8 @@ func newRouter(cfg config.Config, db db.DBTX) *gin.Engine {
 	}
 
 	authRepo := repositories.NewPgxAuthRepository(db)
-	authService := services.NewAuthService(authRepo)
-	authHandler := handlers.NewAuthHandler(cfg, authService)
+	authService := services.NewAuthService(authRepo, cfg.JwtKey)
+	authHandler := handlers.NewAuthHandler(cfg, authService, logger)
 
 	authHandler.SetupRoutes(router)
 
@@ -37,6 +38,6 @@ func newRouter(cfg config.Config, db db.DBTX) *gin.Engine {
 	return router
 }
 
-func ServeWithConfig(cfg config.Config, db db.DBTX) error {
-	return http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), newRouter(cfg, db))
+func ServeWithConfig(cfg config.Config, db db.DBTX, logger *log.Logger) error {
+	return http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), newRouter(cfg, db, logger))
 }

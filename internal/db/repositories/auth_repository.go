@@ -1,21 +1,25 @@
 package repositories
 
-import "github.com/kwinso/medods-test-task/internal/db"
+import (
+	"context"
+
+	"github.com/kwinso/medods-test-task/internal/db"
+)
 
 type AuthRepository interface {
-	GetAuthByGUID(guid string) (*db.Auth, error)
+	CreateAuth(ctx context.Context, auth db.CreateAuthParams) (db.Auth, error)
 }
 
 type pgxAuthRepository struct {
-	db db.DBTX
+	queries db.Queries
 }
 
-func NewPgxAuthRepository(db db.DBTX) AuthRepository {
+func NewPgxAuthRepository(conn db.DBTX) AuthRepository {
 	return &pgxAuthRepository{
-		db: db,
+		queries: *db.New(conn),
 	}
 }
 
-func (r *pgxAuthRepository) GetAuthByGUID(guid string) (*db.Auth, error) {
-	return nil, nil
+func (r *pgxAuthRepository) CreateAuth(ctx context.Context, auth db.CreateAuthParams) (db.Auth, error) {
+	return r.queries.CreateAuth(ctx, auth)
 }

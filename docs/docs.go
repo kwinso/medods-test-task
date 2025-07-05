@@ -15,8 +15,8 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/example/helloworld": {
-            "get": {
+        "/login": {
+            "post": {
                 "description": "do ping",
                 "consumes": [
                     "application/json"
@@ -24,17 +24,52 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "example"
+                "summary": "Generate a token pair from guid",
+                "parameters": [
+                    {
+                        "description": "login request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.LoginRequest"
+                        }
+                    }
                 ],
-                "summary": "ping example",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/api.TokenPair"
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "api.LoginRequest": {
+            "type": "object",
+            "required": [
+                "guid"
+            ],
+            "properties": {
+                "guid": {
+                    "type": "string",
+                    "example": "12345678-1234-1234-1234-123456789012"
+                }
+            }
+        },
+        "api.TokenPair": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "description": "AccessToken is a JWT token that can be used to access the API",
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "description": "RefreshToken is a randomly generated base64 string that can be used to refresh the access token\nIt is valid for 30 days\nRefresh token can only be used to refresh a single access token it was issued with.\nAfter refreshing, the refresh token is no longer valid and cannot be used again.",
+                    "type": "string"
                 }
             }
         }

@@ -7,21 +7,39 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"net/netip"
+	"time"
 )
 
-const getAuthByGUID = `-- name: GetAuthByGUID :one
-SELECT id, guid, refresh_token, ip_address, user_agent, refreshed_at, created_at FROM auths WHERE guid = $1
+const createAuth = `-- name: CreateAuth :one
+INSERT INTO auths 
+  (guid, refresh_token_hash, ip_address, user_agent, refreshed_at)
+VALUES 
+  ($1, $2, $3, $4, $5)
+RETURNING id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at, created_at
 `
 
-func (q *Queries) GetAuthByGUID(ctx context.Context, guid pgtype.UUID) (Auth, error) {
-	row := q.db.QueryRow(ctx, getAuthByGUID, guid)
+type CreateAuthParams struct {
+	Guid             string     `json:"guid"`
+	RefreshTokenHash string     `json:"refresh_token_hash"`
+	IpAddress        netip.Addr `json:"ip_address"`
+	UserAgent        string     `json:"user_agent"`
+	RefreshedAt      time.Time  `json:"refreshed_at"`
+}
+
+func (q *Queries) CreateAuth(ctx context.Context, arg CreateAuthParams) (Auth, error) {
+	row := q.db.QueryRow(ctx, createAuth,
+		arg.Guid,
+		arg.RefreshTokenHash,
+		arg.IpAddress,
+		arg.UserAgent,
+		arg.RefreshedAt,
+	)
 	var i Auth
 	err := row.Scan(
 		&i.ID,
 		&i.Guid,
-		&i.RefreshToken,
+		&i.RefreshTokenHash,
 		&i.IpAddress,
 		&i.UserAgent,
 		&i.RefreshedAt,
