@@ -20,14 +20,14 @@ type Config struct {
 }
 
 var (
-	ErrWebhookURLRequiredError       = errors.New("WEBHOOK_URL env var is required")
-	ErrConnectionStringRequiredError = errors.New("DB_URL env var is required")
-	ErrJWTKeyRequiredError           = errors.New("JWT_KEY env var is required")
+	ErrWebhookURLRequiredError       = errors.New("AUTH_WEBHOOK_URL env var is required")
+	ErrConnectionStringRequiredError = errors.New("AUTH_DB_URL env var is required")
+	ErrJWTKeyRequiredError           = errors.New("AUTH_JWT_KEY env var is required")
 )
 
 func Load() (*Config, error) {
 	port := 8080
-	envPort := os.Getenv("PORT")
+	envPort := os.Getenv("AUTH_PORT")
 
 	if envPort != "" {
 		parsedPort, err := strconv.Atoi(envPort)
@@ -37,7 +37,7 @@ func Load() (*Config, error) {
 		port = parsedPort
 	}
 
-	envUrl := os.Getenv("WEBHOOK_URL")
+	envUrl := os.Getenv("AUTH_WEBHOOK_URL")
 	if envUrl == "" {
 		return nil, ErrWebhookURLRequiredError
 	}
@@ -46,19 +46,19 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	dbConnStr := os.Getenv("DB_URL")
+	dbConnStr := os.Getenv("AUTH_DB_URL")
 	if dbConnStr == "" {
 		return nil, ErrConnectionStringRequiredError
 	}
 
-	key := os.Getenv("JWT_KEY")
+	key := os.Getenv("AUTH_JWT_KEY")
 	if key == "" {
 		return nil, ErrJWTKeyRequiredError
 	}
 
-	tokenTTL := os.Getenv("TOKEN_TTL")
+	tokenTTL := os.Getenv("AUTH_TOKEN_TTL")
 	if tokenTTL == "" {
-		tokenTTL = "1m"
+		tokenTTL = "5m"
 	}
 
 	tokenTTLDuration, err := time.ParseDuration(tokenTTL)
@@ -66,7 +66,7 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	authTTL := os.Getenv("AUTH_TTL")
+	authTTL := os.Getenv("AUTH_AUTH_TTL")
 	if authTTL == "" {
 		authTTL = "1h"
 	}

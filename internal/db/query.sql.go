@@ -13,13 +13,14 @@ import (
 
 const createAuth = `-- name: CreateAuth :one
 INSERT INTO auths 
-  (guid, refresh_token_hash, ip_address, user_agent, refreshed_at)
+  (id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at)
 VALUES 
-  ($1, $2, $3, $4, $5)
+  ($1, $2, $3, $4, $5, $6)
 RETURNING id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at, created_at
 `
 
 type CreateAuthParams struct {
+	ID               int32      `json:"id"`
 	Guid             string     `json:"guid"`
 	RefreshTokenHash string     `json:"refresh_token_hash"`
 	IpAddress        netip.Addr `json:"ip_address"`
@@ -29,6 +30,7 @@ type CreateAuthParams struct {
 
 func (q *Queries) CreateAuth(ctx context.Context, arg CreateAuthParams) (Auth, error) {
 	row := q.db.QueryRow(ctx, createAuth,
+		arg.ID,
 		arg.Guid,
 		arg.RefreshTokenHash,
 		arg.IpAddress,
@@ -74,4 +76,48 @@ func (q *Queries) GetAuthById(ctx context.Context, id int32) (Auth, error) {
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getAuthByRefreshToken = `-- name: GetAuthByRefreshToken :one
+SELECT id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at, created_at FROM auths WHERE refresh_token_hash = $1
+`
+
+func (q *Queries) GetAuthByRefreshToken(ctx context.Context, refreshTokenHash string) (Auth, error) {
+	row := q.db.QueryRow(ctx, getAuthByRefreshToken, refreshTokenHash)
+	var i Auth
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.RefreshTokenHash,
+		&i.IpAddress,
+		&i.UserAgent,
+		&i.RefreshedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getNextAuthId = `-- name: GetNextAuthId :one
+SELECT nextval('auths_id_seq')
+`
+
+func (q *Queries) GetNextAuthId(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, getNextAuthId)
+	var nextval int64
+	err := row.Scan(&nextval)
+	return nextval, err
+}
+
+const updateAuthRefreshToken = `-- name: UpdateAuthRefreshToken :exec
+UPDATE auths SET refresh_token_hash = $1, refreshed_at = NOW() WHERE id = $2
+`
+
+type UpdateAuthRefreshTokenParams struct {
+	RefreshTokenHash string `json:"refresh_token_hash"`
+	ID               int32  `json:"id"`
+}
+
+func (q *Queries) UpdateAuthRefreshToken(ctx context.Context, arg UpdateAuthRefreshTokenParams) error {
+	_, err := q.db.Exec(ctx, updateAuthRefreshToken, arg.RefreshTokenHash, arg.ID)
+	return err
 }

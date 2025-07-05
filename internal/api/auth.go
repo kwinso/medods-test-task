@@ -2,7 +2,11 @@ package api
 
 type LoginRequest struct {
 	// GUID for the user that is logging in
-	GUID string `form:"guid" binding:"required" validate:"guid" example:"12345678-1234-1234-1234-123456789012"`
+	GUID string `json:"guid" binding:"required" validate:"guid" example:"12345678-1234-1234-1234-123456789012"`
+}
+
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required" example:"base64-encoded-token"`
 }
 
 type TokenPair struct {

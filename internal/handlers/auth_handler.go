@@ -11,6 +11,7 @@ import (
 	"github.com/kwinso/medods-test-task/internal/api"
 	"github.com/kwinso/medods-test-task/internal/config"
 	"github.com/kwinso/medods-test-task/internal/services"
+	"github.com/kwinso/medods-test-task/internal/tokens"
 )
 
 type AuthHandler struct {
@@ -29,6 +30,7 @@ func NewAuthHandler(cfg config.Config, authService services.AuthService, logger 
 
 func (h *AuthHandler) SetupRoutes(router *gin.Engine) {
 	router.POST("/login", h.Login)
+	router.PUT("/refresh", h.RefreshTokens)
 
 	authorized := router.Group("/")
 	authorized.Use(h.AuthorizeMiddleware)
@@ -72,7 +74,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, api.TokenPair{
 		AccessToken:  tokenPair.AccessToken,
-		RefreshToken: tokenPair.RefreshToken,
+		RefreshToken: tokens.EncodeRefreshTokenToBase64(tokenPair.RefreshToken),
 	})
 }
 
@@ -89,7 +91,7 @@ func (h *AuthHandler) AuthorizeMiddleware(c *gin.Context) {
 		return
 	}
 
-	auth, err := h.authService.GetAuthByToken(c.Request.Context(), token)
+	auth, err := h.authService.GetAuthByAccessToken(c.Request.Context(), token)
 	if err != nil {
 		if errors.Is(err, services.ErrAuthExpired) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, api.UnauthorizedResponse)
@@ -121,6 +123,54 @@ func (h *AuthHandler) GetMe(c *gin.Context) {
 
 	c.JSON(http.StatusOK, api.GetMeResposne{
 		Guid: guid,
+	})
+}
+
+// @Summary			Refresh the access token for the authenticated user
+// @Description	Refresh the access token for the authenticated user
+// @Param			request	body	api.RefreshRequest	true	"refresh request"
+// @Accept			json
+// @Produce			json
+// @Success			200	{object}	api.TokenPair
+// @Failure			400	{object}	api.ErrorResponse	"Bad Request"
+// @Failure			401	{object}	api.ErrorResponse	"Unauthorized"
+// @Failure			500 {object}	api.ErrorResponse	"Internal Server Error"
+// @Router			/refresh [put]
+func (h *AuthHandler) RefreshTokens(c *gin.Context) {
+	var req api.RefreshRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, api.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	ipString := c.ClientIP()
+	inet, err := netip.ParseAddr(ipString)
+	if err != nil {
+		h.logger.Printf("Failed to parse IP address: %v\n", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, api.InternalServerErrorResponse)
+		return
+	}
+
+	tokenPair, err := h.authService.RefreshAuth(c.Request.Context(), req.RefreshToken, c.GetHeader("User-Agent"), inet)
+	if err != nil {
+		switch err {
+		case services.ErrUserAgentMismatch:
+			fallthrough
+		case services.ErrInvalidTokenFormat:
+			fallthrough
+		case services.ErrAuthExpired:
+			c.AbortWithStatusJSON(http.StatusUnauthorized, api.UnauthorizedResponse)
+		default:
+			h.logger.Printf("Failed to refresh auth: %v\n", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, api.InternalServerErrorResponse)
+		}
+
+		return
+	}
+
+	c.JSON(http.StatusOK, api.TokenPair{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokens.EncodeRefreshTokenToBase64(tokenPair.RefreshToken),
 	})
 }
 

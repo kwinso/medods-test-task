@@ -1,12 +1,22 @@
 package tokens
 
 import (
-	"crypto/rand"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
+	"errors"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrInvalidTokenFormat = errors.New("invalid token format")
+	ErrInvalidSignature   = errors.New("invalid signature")
 )
 
 type TokenClaims struct {
@@ -42,15 +52,45 @@ func ParseAccessToken(tokenString, key string) (*TokenClaims, error) {
 }
 
 // GenerateRefreshToken generates a new refresh token which is a random 32-bit base64 string
-func GenerateRefreshToken() (string, error) {
-	var bytes [32]byte
+func GenerateRefreshToken(authId int, key string) (string, error) {
+	payload := strconv.Itoa(authId)
+	signature := sha256.Sum256([]byte(payload + key))
+	hexSignature := hex.EncodeToString(signature[:])
+	token := payload + "." + hexSignature
+	return token, nil
+}
 
-	_, err := rand.Read(bytes[:])
+func EncodeRefreshTokenToBase64(token string) string {
+	return base64.StdEncoding.EncodeToString([]byte(token))
+}
+
+func ParseEncodedRefreshToken(encodedToken string, key string) (int, error) {
+	tokenBytes, err := base64.StdEncoding.DecodeString(encodedToken)
 	if err != nil {
-		return "", err
+		return 0, err
+	}
+	parts := strings.Split(string(tokenBytes), ".")
+	if len(parts) != 2 {
+		return 0, ErrInvalidTokenFormat
+	}
+	payload := parts[0]
+	signature := parts[1]
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return 0, ErrInvalidTokenFormat
 	}
 
-	return base64.StdEncoding.EncodeToString(bytes[:]), nil
+	testSignature := sha256.Sum256([]byte(payload + key))
+
+	if !hmac.Equal(signatureBytes, testSignature[:]) {
+		return 0, ErrInvalidSignature
+	}
+
+	authId, err := strconv.Atoi(payload)
+	if err != nil {
+		return 0, err
+	}
+	return authId, nil
 }
 
 // HashRefreshToken hashes a refresh token using bcrypt for storing in the database
