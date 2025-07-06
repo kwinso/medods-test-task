@@ -10,6 +10,6 @@ var validGUID = func(fl validator.FieldLevel) bool {
 	return err == nil
 }
 
-func RegisterCustomeValidators(v *validator.Validate) {
-	v.RegisterValidation("guid", validGUID)
+func RegisterCustomValidators(v *validator.Validate) {
+	_ = v.RegisterValidation("guid", validGUID)
 }

@@ -101,7 +101,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.GetMeResposne"
+                            "$ref": "#/definitions/api.GetMeResponse"
                         }
                     },
                     "401": {
@@ -180,7 +180,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.GetMeResposne": {
+        "api.GetMeResponse": {
             "description": "Contains the GUID for the authenticated user",
             "type": "object",
             "properties": {

@@ -1,12 +1,11 @@
 package tokens
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"strconv"
+	"github.com/google/uuid"
 	"strings"
 	"time"
 
@@ -16,16 +15,15 @@ import (
 
 var (
 	ErrInvalidTokenFormat = errors.New("invalid token format")
-	ErrInvalidSignature   = errors.New("invalid signature")
 )
 
 type TokenClaims struct {
 	jwt.RegisteredClaims
-	Guid   string `json:"guid"`
-	AuthId int    `json:"auth_id"`
+	Guid   string    `json:"guid"`
+	AuthId uuid.UUID `json:"auth_id"`
 }
 
-func GenerateAccessToken(guid string, authId int, key string, ttl time.Duration) (string, error) {
+func GenerateAccessToken(guid string, authId uuid.UUID, key string, ttl time.Duration) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS512, TokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
@@ -41,7 +39,7 @@ func ParseAccessToken(tokenString, key string) (*TokenClaims, error) {
 	// Parse the token
 	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// since we only use the one private key to sign the tokens,
-		// we also only use its public counter part to verify
+		// we also only use its public counterpart to verify
 		return []byte(key), nil
 	})
 	if err != nil {
@@ -52,11 +50,15 @@ func ParseAccessToken(tokenString, key string) (*TokenClaims, error) {
 }
 
 // GenerateRefreshToken generates a new refresh token which is a random 32-bit base64 string
-func GenerateRefreshToken(authId int, key string) (string, error) {
-	payload := strconv.Itoa(authId)
-	signature := sha256.Sum256([]byte(payload + key))
-	hexSignature := hex.EncodeToString(signature[:])
-	token := payload + "." + hexSignature
+func GenerateRefreshToken(authId uuid.UUID) (string, error) {
+	payload := authId.String()
+	randomPart := make([]byte, 16)
+	_, err := rand.Read(randomPart)
+	if err != nil {
+		return "", err
+	}
+	randomPartHex := hex.EncodeToString(randomPart)
+	token := "rt." + payload + "." + randomPartHex
 	return token, nil
 }
 
@@ -64,38 +66,22 @@ func EncodeRefreshTokenToBase64(token string) string {
 	return base64.StdEncoding.EncodeToString([]byte(token))
 }
 
-func ParseEncodedRefreshToken(encodedToken string, key string) (int, error) {
-	tokenBytes, err := base64.StdEncoding.DecodeString(encodedToken)
+func ParseEncodedRefreshToken(token string) (*uuid.UUID, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, ErrInvalidTokenFormat
+	}
+	strUUID := parts[1]
+	parsedUUID, err := uuid.Parse(strUUID)
 	if err != nil {
-		return 0, err
+		return nil, ErrInvalidTokenFormat
 	}
-	parts := strings.Split(string(tokenBytes), ".")
-	if len(parts) != 2 {
-		return 0, ErrInvalidTokenFormat
-	}
-	payload := parts[0]
-	signature := parts[1]
-	signatureBytes, err := hex.DecodeString(signature)
-	if err != nil {
-		return 0, ErrInvalidTokenFormat
-	}
-
-	testSignature := sha256.Sum256([]byte(payload + key))
-
-	if !hmac.Equal(signatureBytes, testSignature[:]) {
-		return 0, ErrInvalidSignature
-	}
-
-	authId, err := strconv.Atoi(payload)
-	if err != nil {
-		return 0, err
-	}
-	return authId, nil
+	return &parsedUUID, nil
 }
 
 // HashRefreshToken hashes a refresh token using bcrypt for storing in the database
 func HashRefreshToken(refreshToken string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(refreshToken), 14)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(refreshToken), 5)
 	return string(bytes), err
 }
 

@@ -1,6 +1,6 @@
 CREATE TABLE
   auths (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     guid VARCHAR(36) NOT NULL,
     refresh_token_hash VARCHAR(255) NOT NULL UNIQUE,
     ip_address INET NOT NULL,

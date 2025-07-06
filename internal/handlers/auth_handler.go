@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"errors"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"net/netip"
@@ -40,6 +42,7 @@ func (h *AuthHandler) SetupRoutes(router *gin.Engine) {
 	}
 }
 
+// Login handles generating a pair of tokens for a requested GUID
 // @Summary	Generate a token pair from guid
 // @Param		request	body	api.LoginRequest	true	"login request"
 // @Accept		json
@@ -104,28 +107,29 @@ func (h *AuthHandler) AuthorizeMiddleware(c *gin.Context) {
 	}
 
 	c.Set("user_guid", auth.Guid)
-	// Note: This conversion is needed becase for some reason get
 	c.Set("auth_id", auth.ID)
 
 	c.Next()
 }
 
+// GetMe handles getting authorized user GUID
 // @Summary			Get the GUID for the authenticated user
 // @Description	Returns the GUID for the authenticated user
 // @Security		BearerAuth
 // @Produce			json
-// @Success			200	{object}	api.GetMeResposne
+// @Success			200	{object}	api.GetMeResponse
 // @Failure			401	{object}	api.ErrorResponse	"Unauthorized"
 // @Failure			500 {object}	api.ErrorResponse	"Internal Server Error"
 // @Router			/me [get]
 func (h *AuthHandler) GetMe(c *gin.Context) {
 	guid := c.GetString("user_guid")
 
-	c.JSON(http.StatusOK, api.GetMeResposne{
+	c.JSON(http.StatusOK, api.GetMeResponse{
 		Guid: guid,
 	})
 }
 
+// RefreshTokens is a route for handling tokens refresh
 // @Summary			Refresh the access token for the authenticated user
 // @Description	Refresh the access token for the authenticated user
 // @Param			request	body	api.RefreshRequest	true	"refresh request"
@@ -151,14 +155,19 @@ func (h *AuthHandler) RefreshTokens(c *gin.Context) {
 		return
 	}
 
-	tokenPair, err := h.authService.RefreshAuth(c.Request.Context(), req.RefreshToken, c.GetHeader("User-Agent"), inet)
+	// decode token from base64
+	token, err := base64.StdEncoding.DecodeString(req.RefreshToken)
 	if err != nil {
-		switch err {
-		case services.ErrUserAgentMismatch:
-			fallthrough
-		case services.ErrInvalidTokenFormat:
-			fallthrough
-		case services.ErrAuthExpired:
+		c.AbortWithStatusJSON(http.StatusBadRequest, api.BadRequestResponse)
+		return
+	}
+
+	tokenPair, err := h.authService.RefreshAuth(c.Request.Context(), string(token), c.GetHeader("User-Agent"), inet)
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrUserAgentMismatch):
+		case errors.Is(err, services.ErrInvalidTokenFormat):
+		case errors.Is(err, services.ErrAuthExpired):
 			c.AbortWithStatusJSON(http.StatusUnauthorized, api.UnauthorizedResponse)
 		default:
 			h.logger.Printf("Failed to refresh auth: %v\n", err)
@@ -174,6 +183,7 @@ func (h *AuthHandler) RefreshTokens(c *gin.Context) {
 	})
 }
 
+// Logout handles logout logic
 // @Summary			Logout the authenticated user
 // @Description	Deletes the auth for the authenticated user
 // @Security		BearerAuth
@@ -182,7 +192,7 @@ func (h *AuthHandler) RefreshTokens(c *gin.Context) {
 // @Failure			500 {object}	api.ErrorResponse	"Internal Server Error"
 // @Router			/logout [delete]
 func (h *AuthHandler) Logout(c *gin.Context) {
-	authId, _ := c.MustGet("auth_id").(int32)
+	authId := c.MustGet("auth_id").(uuid.UUID)
 
 	err := h.authService.DeleteAuthById(c.Request.Context(), authId)
 	if err != nil {

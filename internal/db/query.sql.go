@@ -9,6 +9,8 @@ import (
 	"context"
 	"net/netip"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const createAuth = `-- name: CreateAuth :one
@@ -20,7 +22,7 @@ RETURNING id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at, cr
 `
 
 type CreateAuthParams struct {
-	ID               int32      `json:"id"`
+	ID               uuid.UUID  `json:"id"`
 	Guid             string     `json:"guid"`
 	RefreshTokenHash string     `json:"refresh_token_hash"`
 	IpAddress        netip.Addr `json:"ip_address"`
@@ -54,7 +56,7 @@ const deleteAuthById = `-- name: DeleteAuthById :exec
 DELETE FROM auths WHERE id = $1
 `
 
-func (q *Queries) DeleteAuthById(ctx context.Context, id int32) error {
+func (q *Queries) DeleteAuthById(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteAuthById, id)
 	return err
 }
@@ -63,7 +65,7 @@ const getAuthById = `-- name: GetAuthById :one
 SELECT id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at, created_at FROM auths WHERE id = $1
 `
 
-func (q *Queries) GetAuthById(ctx context.Context, id int32) (Auth, error) {
+func (q *Queries) GetAuthById(ctx context.Context, id uuid.UUID) (Auth, error) {
 	row := q.db.QueryRow(ctx, getAuthById, id)
 	var i Auth
 	err := row.Scan(
@@ -113,8 +115,8 @@ UPDATE auths SET refresh_token_hash = $1, refreshed_at = NOW() WHERE id = $2
 `
 
 type UpdateAuthRefreshTokenParams struct {
-	RefreshTokenHash string `json:"refresh_token_hash"`
-	ID               int32  `json:"id"`
+	RefreshTokenHash string    `json:"refresh_token_hash"`
+	ID               uuid.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateAuthRefreshToken(ctx context.Context, arg UpdateAuthRefreshTokenParams) error {

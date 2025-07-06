@@ -1,10 +1,10 @@
 set dotenv-load := true
 
 migrate-up:
-  migrate -database ${DB_URL} -path sql/migrations up
+  migrate -database ${AUTH_DB_URL} -path sql/migrations up
 
 migrate-down:
-  migrate -database ${DB_URL} -path sql/migrations down
+  migrate -database ${AUTH_DB_URL} -path sql/migrations down -all
 
 gen-db:
   sqlc generate

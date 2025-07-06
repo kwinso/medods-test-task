@@ -7,10 +7,12 @@ package db
 import (
 	"net/netip"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Auth struct {
-	ID               int32      `json:"id"`
+	ID               uuid.UUID  `json:"id"`
 	Guid             string     `json:"guid"`
 	RefreshTokenHash string     `json:"refresh_token_hash"`
 	IpAddress        netip.Addr `json:"ip_address"`

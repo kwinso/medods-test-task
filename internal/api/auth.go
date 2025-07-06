@@ -19,7 +19,8 @@ type TokenPair struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// GetMeResponse holds a response for the /me route
 // @Description	Contains the GUID for the authenticated user
-type GetMeResposne struct {
+type GetMeResponse struct {
 	Guid string `json:"guid" example:"12345678-1234-1234-1234-123456789012"`
 }

@@ -1,3 +1,5 @@
+-- noinspection SqlResolveForFile
+
 -- name: CreateAuth :one
 INSERT INTO auths 
   (id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at)

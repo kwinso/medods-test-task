@@ -6,7 +6,7 @@ definitions:
         description: Contains the error message
         type: string
     type: object
-  api.GetMeResposne:
+  api.GetMeResponse:
     description: Contains the GUID for the authenticated user
     properties:
       guid:
@@ -99,7 +99,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.GetMeResposne'
+            $ref: '#/definitions/api.GetMeResponse'
         "401":
           description: Unauthorized
           schema:

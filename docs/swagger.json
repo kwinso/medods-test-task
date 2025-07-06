@@ -90,7 +90,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.GetMeResposne"
+                            "$ref": "#/definitions/api.GetMeResponse"
                         }
                     },
                     "401": {
@@ -169,7 +169,7 @@
                 }
             }
         },
-        "api.GetMeResposne": {
+        "api.GetMeResponse": {
             "description": "Contains the GUID for the authenticated user",
             "type": "object",
             "properties": {

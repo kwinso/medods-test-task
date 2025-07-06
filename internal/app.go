@@ -23,7 +23,7 @@ func newRouter(cfg config.Config, db db.DBTX, logger *log.Logger) *gin.Engine {
 	router := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		api.RegisterCustomeValidators(v)
+		api.RegisterCustomValidators(v)
 	}
 
 	authRepo := repositories.NewPgxAuthRepository(db)
@@ -38,10 +38,11 @@ func newRouter(cfg config.Config, db db.DBTX, logger *log.Logger) *gin.Engine {
 	return router
 }
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@in							header
-//	@name						Authorization
-//	@description				Authorization header using the Bearer scheme
+// ServeWithConfig bootstraps and app using the app config and db connection
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description				Authorization header using the Bearer scheme
 func ServeWithConfig(cfg config.Config, db db.DBTX, logger *log.Logger) error {
 	return http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), newRouter(cfg, db, logger))
 }
