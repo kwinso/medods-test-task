@@ -3,17 +3,16 @@ package handlers
 import (
 	"encoding/base64"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/kwinso/medods-test-task/internal/api"
+	"github.com/kwinso/medods-test-task/internal/config"
+	"github.com/kwinso/medods-test-task/internal/handlers/middleware"
+	"github.com/kwinso/medods-test-task/internal/services"
+	"github.com/kwinso/medods-test-task/internal/tokens"
 	"log"
 	"net/http"
 	"net/netip"
-	"strings"
-
-	"github.com/gin-gonic/gin"
-	"github.com/kwinso/medods-test-task/internal/api"
-	"github.com/kwinso/medods-test-task/internal/config"
-	"github.com/kwinso/medods-test-task/internal/services"
-	"github.com/kwinso/medods-test-task/internal/tokens"
 )
 
 type AuthHandler struct {
@@ -30,12 +29,12 @@ func NewAuthHandler(cfg config.Config, authService services.AuthService, logger 
 	}
 }
 
-func (h *AuthHandler) SetupRoutes(router *gin.Engine) {
+func (h *AuthHandler) SetupRoutes(router *gin.Engine, auth middleware.Middleware) {
 	router.POST("/login", h.Login)
 	router.PUT("/refresh", h.RefreshTokens)
 
 	authorized := router.Group("/")
-	authorized.Use(h.AuthorizeMiddleware)
+	authorized.Use(auth.Handle)
 	{
 		authorized.GET("/me", h.GetMe)
 		authorized.DELETE("/logout", h.Logout)
@@ -79,37 +78,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokens.EncodeRefreshTokenToBase64(tokenPair.RefreshToken),
 	})
-}
-
-func (h *AuthHandler) AuthorizeMiddleware(c *gin.Context) {
-	bearerToken := c.GetHeader("Authorization")
-	if bearerToken == "" {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, api.UnauthorizedResponse)
-		return
-	}
-
-	token := strings.TrimPrefix(bearerToken, "Bearer ")
-	if token == "" {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, api.UnauthorizedResponse)
-		return
-	}
-
-	auth, err := h.authService.GetAuthByAccessToken(c.Request.Context(), token)
-	if err != nil {
-		if errors.Is(err, services.ErrAuthExpired) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, api.UnauthorizedResponse)
-			return
-		}
-
-		h.logger.Printf("Failed to authorize user: %v\n", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, api.InternalServerErrorResponse)
-		return
-	}
-
-	c.Set("user_guid", auth.Guid)
-	c.Set("auth_id", auth.ID)
-
-	c.Next()
 }
 
 // GetMe handles getting authorized user GUID

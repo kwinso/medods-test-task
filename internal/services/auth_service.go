@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"net/netip"
 	"time"
 
@@ -43,14 +44,16 @@ type authService struct {
 	key      string
 	tokenTTL time.Duration
 	authTTL  time.Duration
+	logger   *log.Logger
 }
 
-func NewAuthService(repo repositories.AuthRepository, key string, tokenTTL, authTTL time.Duration) AuthService {
+func NewAuthService(repo repositories.AuthRepository, logger *log.Logger, key string, tokenTTL, authTTL time.Duration) AuthService {
 	return &authService{
 		repo:     repo,
 		key:      key,
 		tokenTTL: tokenTTL,
 		authTTL:  authTTL,
+		logger:   logger,
 	}
 }
 
@@ -143,6 +146,7 @@ func (s *authService) RefreshAuth(ctx context.Context, refreshToken, userAgent s
 	}
 
 	if auth.UserAgent != userAgent {
+		s.logger.Printf("User agent mismatch (was %q, got %q) for user %v. Dropping authorization", auth.UserAgent, userAgent, auth.Guid)
 		_ = s.DeleteAuthById(ctx, auth.ID)
 		return nil, ErrUserAgentMismatch
 	}

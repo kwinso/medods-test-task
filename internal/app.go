@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"github.com/kwinso/medods-test-task/internal/handlers/middleware"
 	"log"
 	"net/http"
 
@@ -27,10 +28,11 @@ func newRouter(cfg config.Config, db db.DBTX, logger *log.Logger) *gin.Engine {
 	}
 
 	authRepo := repositories.NewPgxAuthRepository(db)
-	authService := services.NewAuthService(authRepo, cfg.JwtKey, cfg.TokenTTL, cfg.AuthTTL)
+	authService := services.NewAuthService(authRepo, logger, cfg.JwtKey, cfg.TokenTTL, cfg.AuthTTL)
 	authHandler := handlers.NewAuthHandler(cfg, authService, logger)
 
-	authHandler.SetupRoutes(router)
+	authMiddleware := middleware.NewAuthMiddleware(authService, logger)
+	authHandler.SetupRoutes(router, authMiddleware)
 
 	docs.SwaggerInfo.BasePath = "/"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
