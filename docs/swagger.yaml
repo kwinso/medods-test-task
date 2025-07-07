@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   api.ErrorResponse:
     description: Generic error response
@@ -43,8 +44,13 @@ definitions:
           After refreshing, the refresh token is no longer valid and cannot be used again.
         type: string
     type: object
+host: localhost:8080
 info:
   contact: {}
+  description: Auth server for test task
+  termsOfService: http://swagger.io/terms/
+  title: MEDODS Test task auth server API
+  version: "1.0"
 paths:
   /login:
     post:
@@ -145,7 +151,8 @@ paths:
       summary: Refresh the access token for the authenticated user
 securityDefinitions:
   BearerAuth:
-    description: Authorization header using the Bearer scheme
+    description: Authorization header using the Bearer scheme. Don't forget the Bearer
+      prefix
     in: header
     name: Authorization
     type: apiKey
