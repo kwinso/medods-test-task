@@ -40,12 +40,12 @@ func (m *AuthMiddleware) Handle(c *gin.Context) {
 		return
 	}
 
-	token := strings.TrimPrefix(bearerToken, "Bearer ")
-	if token == "" {
+	parts := strings.SplitN(bearerToken, " ", 2)
+	if len(parts) != 2 || parts[0] != "Bearer" {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, api.UnauthorizedResponse)
-		return
 	}
 
+	token := parts[1]
 	auth, err := m.authService.GetAuthByAccessToken(c.Request.Context(), token)
 	if err != nil {
 		if errors.Is(err, services.ErrAuthExpired) {
