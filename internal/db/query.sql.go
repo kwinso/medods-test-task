@@ -14,6 +14,7 @@ import (
 )
 
 const createAuth = `-- name: CreateAuth :one
+
 INSERT INTO auths 
   (id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at)
 VALUES 
@@ -30,6 +31,7 @@ type CreateAuthParams struct {
 	RefreshedAt      time.Time  `json:"refreshed_at"`
 }
 
+// noinspection SqlResolveForFile
 func (q *Queries) CreateAuth(ctx context.Context, arg CreateAuthParams) (Auth, error) {
 	row := q.db.QueryRow(ctx, createAuth,
 		arg.ID,
@@ -78,36 +80,6 @@ func (q *Queries) GetAuthById(ctx context.Context, id uuid.UUID) (Auth, error) {
 		&i.CreatedAt,
 	)
 	return i, err
-}
-
-const getAuthByRefreshToken = `-- name: GetAuthByRefreshToken :one
-SELECT id, guid, refresh_token_hash, ip_address, user_agent, refreshed_at, created_at FROM auths WHERE refresh_token_hash = $1
-`
-
-func (q *Queries) GetAuthByRefreshToken(ctx context.Context, refreshTokenHash string) (Auth, error) {
-	row := q.db.QueryRow(ctx, getAuthByRefreshToken, refreshTokenHash)
-	var i Auth
-	err := row.Scan(
-		&i.ID,
-		&i.Guid,
-		&i.RefreshTokenHash,
-		&i.IpAddress,
-		&i.UserAgent,
-		&i.RefreshedAt,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const getNextAuthId = `-- name: GetNextAuthId :one
-SELECT nextval('auths_id_seq')
-`
-
-func (q *Queries) GetNextAuthId(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, getNextAuthId)
-	var nextval int64
-	err := row.Scan(&nextval)
-	return nextval, err
 }
 
 const updateAuthRefreshToken = `-- name: UpdateAuthRefreshToken :exec
