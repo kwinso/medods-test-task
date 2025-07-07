@@ -67,7 +67,7 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	authTTL := os.Getenv("AUTH_AUTH_TTL")
+	authTTL := os.Getenv("AUTH_SESSION_TTL")
 	if authTTL == "" {
 		authTTL = "1h"
 	}
