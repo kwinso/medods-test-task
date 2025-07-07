@@ -132,12 +132,11 @@ func (h *AuthHandler) RefreshTokens(c *gin.Context) {
 
 	tokenPair, err := h.authService.RefreshAuth(c.Request.Context(), string(token), c.GetHeader("User-Agent"), inet)
 	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrUserAgentMismatch):
-		case errors.Is(err, services.ErrInvalidTokenFormat):
-		case errors.Is(err, services.ErrAuthExpired):
+		if errors.Is(err, services.ErrUserAgentMismatch) ||
+			errors.Is(err, services.ErrInvalidTokenFormat) ||
+			errors.Is(err, services.ErrAuthExpired) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, api.UnauthorizedResponse)
-		default:
+		} else {
 			h.logger.Printf("Failed to refresh auth: %v\n", err)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, api.InternalServerErrorResponse)
 		}
