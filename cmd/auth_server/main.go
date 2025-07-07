@@ -26,12 +26,14 @@ func main() {
 	}
 	defer conn.Close(ctx)
 
-	run, err := db.ApplyMigrations(cfg.DatabaseURL)
-	if err != nil {
-		logger.Fatal("Failed to apply migrations: ", err)
-	}
-	if run {
-		logger.Println("Applied migrations")
+	if cfg.MigrationsSource != "" {
+		run, err := db.ApplyMigrations(cfg.DatabaseURL, cfg.MigrationsSource)
+		if err != nil {
+			logger.Fatal("Failed to apply migrations: ", err)
+		}
+		if run {
+			logger.Println("Applied migrations")
+		}
 	}
 
 	logger.Printf("Starting server on port %d\n", cfg.Port)

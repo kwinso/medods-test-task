@@ -28,7 +28,10 @@ func newRouter(cfg config.Config, db db.DBTX, logger *log.Logger) *gin.Engine {
 	}
 
 	authRepo := repositories.NewPgxAuthRepository(db)
-	authService := services.NewAuthService(authRepo, logger, cfg.JwtKey, cfg.TokenTTL, cfg.AuthTTL)
+
+	reportsService := services.NewWebhookReportsService(cfg.WebhookURL)
+
+	authService := services.NewAuthService(authRepo, &reportsService, logger, cfg.JwtKey, cfg.TokenTTL, cfg.AuthTTL)
 	authHandler := handlers.NewAuthHandler(cfg, authService, logger)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService, logger)

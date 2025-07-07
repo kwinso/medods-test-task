@@ -11,12 +11,13 @@ import (
 )
 
 type Config struct {
-	Port        int
-	WebhookURL  url.URL
-	DatabaseURL string
-	JwtKey      string
-	TokenTTL    time.Duration
-	AuthTTL     time.Duration
+	Port             int
+	WebhookURL       url.URL
+	DatabaseURL      string
+	JwtKey           string
+	TokenTTL         time.Duration
+	AuthTTL          time.Duration
+	MigrationsSource string
 }
 
 var (
@@ -76,12 +77,15 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	migrationsSource := os.Getenv("AUTH_MIGRATIONS_SOURCE")
+
 	return &Config{
-		Port:        port,
-		WebhookURL:  *webhookURL,
-		DatabaseURL: dbConnStr,
-		JwtKey:      key,
-		TokenTTL:    tokenTTLDuration,
-		AuthTTL:     authTTLDuration,
+		Port:             port,
+		WebhookURL:       *webhookURL,
+		DatabaseURL:      dbConnStr,
+		JwtKey:           key,
+		TokenTTL:         tokenTTLDuration,
+		AuthTTL:          authTTLDuration,
+		MigrationsSource: migrationsSource,
 	}, nil
 }

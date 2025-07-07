@@ -9,9 +9,9 @@ import (
 )
 
 // ApplyMigrations runs all unapplied migrations. Returns true if migrations were applied, false if no change is done.
-func ApplyMigrations(dbUrl string) (bool, error) {
+func ApplyMigrations(dbUrl string, migrationsSource string) (bool, error) {
 	m, err := migrate.New(
-		"file://sql/migrations",
+		migrationsSource,
 		dbUrl)
 
 	if err != nil {

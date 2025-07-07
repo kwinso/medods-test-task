@@ -1,4 +1,21 @@
 services:
+  auth_server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./sql/migrations:/migrations"
+    environment:
+      AUTH_WEBHOOK_URL: http://webhook_tester:3000/c80f5ead-a560-41d5-9c3e-74ca69be0883/report
+      AUTH_DB_URL:  postgres://medods:medods@db:5432/medods?sslmode=disable
+      AUTH_JWT_KEY: test_jwt_key
+      AUTH_MIGRATIONS_SOURCE: "file:///migrations"
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
   db:
     image: postgres:latest
     restart: always
@@ -6,5 +23,20 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-medods}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medods}
       POSTGRES_DB: ${POSTGRES_DB:-medods}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medods} -d ${POSTGRES_DB:-medods}" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
     ports:
       - "5432:5432"
+
+  webhook_tester:
+    image: tarampampam/webhook-tester:latest
+    restart: always
+    environment:
+      HTTP_PORT: 3000
+      AUTO_CREATE_SESSIONS: true
+    ports:
+      - "3000:3000"

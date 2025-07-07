@@ -40,20 +40,22 @@ type AuthService interface {
 }
 
 type authService struct {
-	repo     repositories.AuthRepository
-	key      string
-	tokenTTL time.Duration
-	authTTL  time.Duration
-	logger   *log.Logger
+	repo          repositories.AuthRepository
+	key           string
+	tokenTTL      time.Duration
+	authTTL       time.Duration
+	logger        *log.Logger
+	reportService ReportService
 }
 
-func NewAuthService(repo repositories.AuthRepository, logger *log.Logger, key string, tokenTTL, authTTL time.Duration) AuthService {
+func NewAuthService(repo repositories.AuthRepository, reportService ReportService, logger *log.Logger, key string, tokenTTL, authTTL time.Duration) AuthService {
 	return &authService{
-		repo:     repo,
-		key:      key,
-		tokenTTL: tokenTTL,
-		authTTL:  authTTL,
-		logger:   logger,
+		repo:          repo,
+		key:           key,
+		tokenTTL:      tokenTTL,
+		authTTL:       authTTL,
+		logger:        logger,
+		reportService: reportService,
 	}
 }
 
@@ -151,8 +153,12 @@ func (s *authService) RefreshAuth(ctx context.Context, refreshToken, userAgent s
 		return nil, ErrUserAgentMismatch
 	}
 
-	if auth.IpAddress != ip {
-		// TODO: Send webhook
+	if auth.IpAddress.Compare(ip) != 0 {
+		s.logger.Printf("Auth for %v IP changed from %q to %q. Sending report to webhook.", auth.Guid, auth.IpAddress, ip)
+		err := s.reportService.SendIPChangeReport(auth, ip)
+		if err != nil {
+			s.logger.Printf("Failed to deliver webhook change report for %v: %v", auth.Guid, err)
+		}
 	}
 
 	newRefreshToken, err := tokens.GenerateRefreshToken(auth.ID)
