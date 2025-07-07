@@ -39,7 +39,7 @@ func (s *WebhookReportsService) SendIPChangeReport(auth db.Auth, newIP netip.Add
 	ipReport := &ipChangeReport{
 		Guid:      auth.Guid,
 		UserAgent: auth.UserAgent,
-		OldIP:     newIP.String(),
+		OldIP:     auth.IpAddress.String(),
 		NewIP:     newIP.String(),
 	}
 	content, err := json.Marshal(ipReport)
